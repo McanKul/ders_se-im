@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import sys
 import socket
 import statistics
 import struct
@@ -170,7 +171,6 @@ class App(tk.Tk):
         self.var_date = tk.StringVar(value=_next_default_registration_day().isoformat())
         self.var_time = tk.StringVar(value="10:00:00.000")
         self.var_delay = tk.StringVar(value="0")
-        self.var_dry_run = tk.BooleanVar(value=True)
         self.var_status = tk.StringVar(value="Bilgileri girip Başlat'a basın.")
         self._automation: BrowserAutomation | None = None
         self._running = False
@@ -209,22 +209,16 @@ class App(tk.Tk):
         ttk.Entry(outer, textvariable=self.var_delay, width=8).grid(row=7, column=1, sticky="w", padx=(14, 0), pady=5)
         ttk.Label(outer, text="ms (önerilen: 0)").grid(row=7, column=2, sticky="w", padx=(8, 0))
 
-        ttk.Checkbutton(
-            outer,
-            text="Kuru prova — giriş/token akışını dene, kayıt POST'u gönderme",
-            variable=self.var_dry_run,
-        ).grid(row=8, column=0, columnspan=3, sticky="w", pady=(14, 8))
-
         buttons = ttk.Frame(outer)
-        buttons.grid(row=9, column=0, columnspan=3, sticky="ew", pady=(8, 14))
+        buttons.grid(row=8, column=0, columnspan=3, sticky="ew", pady=(18, 14))
         self.btn_start = ttk.Button(buttons, text="Başlat", command=self.start)
         self.btn_start.pack(side=tk.LEFT)
         self.btn_cancel = ttk.Button(buttons, text="İptal", command=self.cancel, state=tk.DISABLED)
         self.btn_cancel.pack(side=tk.LEFT, padx=8)
 
         status_box = ttk.LabelFrame(outer, text="Durum", padding=12)
-        status_box.grid(row=10, column=0, columnspan=3, sticky="nsew")
-        outer.rowconfigure(10, weight=1)
+        status_box.grid(row=9, column=0, columnspan=3, sticky="nsew")
+        outer.rowconfigure(9, weight=1)
         ttk.Label(status_box, textvariable=self.var_status, wraplength=610, justify=tk.LEFT).pack(anchor="w")
         ttk.Label(
             outer,
@@ -232,7 +226,7 @@ class App(tk.Tk):
             wraplength=620,
             foreground="#555555",
             justify=tk.LEFT,
-        ).grid(row=11, column=0, columnspan=3, sticky="w", pady=(12, 0))
+        ).grid(row=10, column=0, columnspan=3, sticky="w", pady=(12, 0))
 
     def _read_form(self) -> tuple[LoginCredentials, tuple[str, ...], tuple[str, ...], int, str, int]:
         username, password = self.var_username.get().strip(), self.var_password.get()
@@ -268,22 +262,21 @@ class App(tk.Tk):
             messagebox.showerror("Geçersiz bilgi", str(exc), parent=self)
             return
 
-        if not self.var_dry_run.get():
-            add_text = ", ".join(add_crns) or "YOK"
-            drop_text = ", ".join(drop_crns) or "YOK"
-            confirmed = messagebox.askyesno(
-                "Ders listesini son kez kontrol edin",
-                "ALINACAK / EKLENECEK (ECRN):\n"
-                f"{add_text}\n\n"
-                "BIRAKILACAK / SİLİNECEK (SCRN):\n"
-                f"{drop_text}\n\n"
-                f"Hedef: {target_label}\n\n"
-                "Bu eşleme doğru mu?",
-                icon="warning",
-                parent=self,
-            )
-            if not confirmed:
-                return
+        add_text = ", ".join(add_crns) or "YOK"
+        drop_text = ", ".join(drop_crns) or "YOK"
+        confirmed = messagebox.askyesno(
+            "Ders listesini son kez kontrol edin",
+            "ALINACAK / EKLENECEK (ECRN):\n"
+            f"{add_text}\n\n"
+            "BIRAKILACAK / SİLİNECEK (SCRN):\n"
+            f"{drop_text}\n\n"
+            f"Hedef: {target_label}\n\n"
+            "Bu eşleme doğru mu?",
+            icon="warning",
+            parent=self,
+        )
+        if not confirmed:
+            return
 
         self._running = True
         self.var_password.set("")
@@ -303,7 +296,7 @@ class App(tk.Tk):
                     clock_offset_ms=estimate.offset_ms,
                     clock_uncertainty_ms=estimate.uncertainty_ms,
                     send_delay_ms=delay_ms,
-                    dry_run=self.var_dry_run.get(),
+                    dry_run=False,
                 )
                 self._set_status(
                     f"Saat farkı {estimate.offset_ms:+.2f} ms ölçüldü. Tarayıcı hazırlanıyor…"
@@ -348,4 +341,19 @@ class App(tk.Tk):
 
 
 if __name__ == "__main__":
+    if "--self-test" in sys.argv:
+        try:
+            from playwright.sync_api import sync_playwright
+
+            with sync_playwright() as playwright:
+                # "chromium" kanalı normal gömülü Chromium'un yeni headless
+                # modunu kullanır; ayrı headless-shell paketine ihtiyaç duymaz.
+                browser = playwright.chromium.launch(headless=True, channel="chromium")
+                page = browser.new_page()
+                page.set_content("<title>OBS Bot Self Test</title><h1>ok</h1>")
+                passed = page.title() == "OBS Bot Self Test" and page.locator("h1").inner_text() == "ok"
+                browser.close()
+            raise SystemExit(0 if passed else 1)
+        except Exception:
+            raise SystemExit(1)
     App().mainloop()

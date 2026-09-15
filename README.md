@@ -23,15 +23,13 @@ python -m playwright install chromium
    seçimi gösterirse yalnızca bu istisnai adımı açılan tarayıcıda tamamlayın.
 6. Hazır ekranı geldikten sonra tarayıcıyı açık, son 10 saniye ön planda tutun.
 
-İlk denemede **Kuru prova** açık bırakılmalıdır. Kuru prova giriş ve zamanlamayı
-test eder ancak kayıt POST'u göndermez.
-
 ## Güvenlik ve zamanlama
 
 - Kullanıcı adı ve şifre dosyaya yazılmaz; şifre Başlat'a basılınca GUI'den silinir.
 - Tarayıcı geçici ve yalıtılmış bir Playwright oturumuyla açılır.
 - Son 30 saniyede saat kontrolü, ping veya hazırlık isteği gönderilmez.
 - Hedef anda yalnızca tek bir kayıt POST'u gönderilir; tekrar/spam modu yoktur.
+- Son kullanıcı arayüzünde kuru prova seçeneği yoktur; Başlat gerçek kayıt kurar.
 - Kritik API eşlemesi testle korunur: `ECRN = alınacak`, `SCRN = bırakılacak`.
 
 ## EXE paketleme
@@ -39,13 +37,19 @@ test eder ancak kayıt POST'u göndermez.
 Playwright Chromium'u EXE ile paketlemek için:
 
 ```powershell
-$env:PLAYWRIGHT_BROWSERS_PATH="0"
-python -m playwright install chromium
-python -m PyInstaller --onefile --windowed --name OBS-Ders-Kayit bot2.py
+powershell -ExecutionPolicy Bypass -File .\build_exe.ps1
 ```
 
 Tarayıcı da pakete dahil edildiği için çıktı normal bir Python EXE'sinden büyük
-olur, fakat cihazdaki Chrome/ChromeDriver sürümüne bağlı kalmaz.
+olur, fakat cihazdaki Chrome/ChromeDriver sürümüne bağlı kalmaz. Build yalnızca
+uygulamanın kullandığı tam Chromium'u ekler; ayrı headless-shell eklenmez.
+
+Paketin gömülü Chromium'u çalıştırabildiğini doğrulamak için:
+
+```powershell
+$test = Start-Process .\dist\OBS-Ders-Kayit.exe -ArgumentList "--self-test" -Wait -PassThru
+if ($test.ExitCode -eq 0) { "Self-test başarılı" }
+```
 
 ## Test
 
