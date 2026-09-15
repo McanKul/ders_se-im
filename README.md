@@ -1,36 +1,51 @@
-# OBS Ders Kayıt Snippet Hazırlayıcı
+# OBS Otomatik Ders Kayıt
 
-`bot2.py`, ChromeDriver veya Selenium kullanmadan normal tarayıcıdaki açık OBS
-oturumunda çalışacak tek-atış JavaScript Snippet'i üretir. Kullanıcı adı ve şifre
-uygulamaya verilmez.
+Uygulama kullanıcı adı, şifre, alınacak dersler ve bırakılacak dersleri tek
+ekrandan alır. Playwright tarayıcıyı açar, OBS girişini yapar, Bearer yetkisini
+ağ isteğinden yakalar ve tek-atış zamanlayıcısını otomatik kurar. Kullanıcının
+DevTools, Snippet veya token ile uğraşması gerekmez.
+
+## Kurulum
+
+```powershell
+python -m pip install -r requirements.txt
+python -m playwright install chromium
+```
 
 ## Kullanım
 
 1. `python bot2.py` ile uygulamayı açın.
-2. CRN, hedef tarih ve hedef saati girin. İlk denemede **Kuru prova** açık kalsın.
-3. **OBS'yi aç** ile normal şekilde giriş yapın.
-4. **Snippet'i hazırla ve kopyala** düğmesine basın.
-5. Chrome'da `F12 → Sources → Snippets → New snippet` yolunu açın.
-6. `Ctrl+V`, ardından `Ctrl+Enter` ile çalıştırın.
-7. OBS sayfasında açılan panelden **Kontrol et ve kur** düğmesine hedefe 1–10
-   dakika kala basın.
+2. Kullanıcı adı ve şifreyi girin.
+3. **ALINACAK / EKLENECEK (ECRN)** ve **BIRAKILACAK / SİLİNECEK (SCRN)**
+   alanlarını dikkatle doldurun.
+4. Hedefe 3–30 dakika kala **Başlat** düğmesine basın.
+5. Normal giriş otomatik tamamlanır. Kurumsal giriş ek doğrulama veya bölüm
+   seçimi gösterirse yalnızca bu istisnai adımı açılan tarayıcıda tamamlayın.
+6. Hazır ekranı geldikten sonra tarayıcıyı açık, son 10 saniye ön planda tutun.
 
-Hazırlık bittikten sonra hedefe son 30 saniye kala OBS'ye hiçbir kontrol, saat
-veya bağlantı ısıtma isteği atılmaz. Gerçek kayıt modunda hedef anda yalnızca tek
-bir POST gönderilir; tekrar/spam modu yoktur.
+İlk denemede **Kuru prova** açık bırakılmalıdır. Kuru prova giriş ve zamanlamayı
+test eder ancak kayıt POST'u göndermez.
 
-Saat ölçümünün ve tokenın taze kalması için Snippet hedefe son 30 dakika içinde
-hazırlanır. Son 10 saniye boyunca OBS sekmesini ön planda tutun.
+## Güvenlik ve zamanlama
 
-## EXE oluşturma
+- Kullanıcı adı ve şifre dosyaya yazılmaz; şifre Başlat'a basılınca GUI'den silinir.
+- Tarayıcı geçici ve yalıtılmış bir Playwright oturumuyla açılır.
+- Son 30 saniyede saat kontrolü, ping veya hazırlık isteği gönderilmez.
+- Hedef anda yalnızca tek bir kayıt POST'u gönderilir; tekrar/spam modu yoktur.
+- Kritik API eşlemesi testle korunur: `ECRN = alınacak`, `SCRN = bırakılacak`.
+
+## EXE paketleme
+
+Playwright Chromium'u EXE ile paketlemek için:
 
 ```powershell
-python -m pip install pyinstaller
+$env:PLAYWRIGHT_BROWSERS_PATH="0"
+python -m playwright install chromium
 python -m PyInstaller --onefile --windowed --name OBS-Ders-Kayit bot2.py
 ```
 
-Çıktı `dist/OBS-Ders-Kayit.exe` olur. EXE sistem tarayıcısını kullandığı için
-Chrome/ChromeDriver sürüm eşleşmesine ihtiyaç duymaz.
+Tarayıcı da pakete dahil edildiği için çıktı normal bir Python EXE'sinden büyük
+olur, fakat cihazdaki Chrome/ChromeDriver sürümüne bağlı kalmaz.
 
 ## Test
 
