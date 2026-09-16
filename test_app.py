@@ -2,7 +2,7 @@ import json
 import unittest
 from datetime import datetime, timedelta
 
-from bot2 import parse_crns, parse_target
+from app import parse_crns, parse_target
 from browser_automation import (
     BrowserRegistrationConfig,
     LoginCredentials,
@@ -11,7 +11,7 @@ from browser_automation import (
 )
 
 
-class Bot2Tests(unittest.TestCase):
+class AppTests(unittest.TestCase):
     def test_parse_crns_deduplicates_and_preserves_order(self):
         self.assertEqual(parse_crns("12345, 67890 12345"), ("12345", "67890"))
 

@@ -32,7 +32,7 @@ try {
         --distpath (Join-Path $projectRoot "dist") `
         --workpath (Join-Path $projectRoot "build\pyinstaller") `
         --specpath (Join-Path $projectRoot "build") `
-        bot2.py
+        app.py
     if ($LASTEXITCODE -ne 0) { throw "PyInstaller paketi oluşturamadı." }
 
     Write-Host "EXE hazır: $(Join-Path $projectRoot 'dist\OBS-Ders-Kayit.exe')"
